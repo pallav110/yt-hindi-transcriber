@@ -60,7 +60,7 @@ const handler = async (req: Request, res: Response): Promise<void> => {
       filename: path.basename(tempMp3Path),
     });
 
-    const transcriptResponse = await axios.post('http://0.0.0.0:5000/transcribe', form, {
+    const transcriptResponse = await axios.post('http://localhost:5000/transcribe', form, {
       headers: form.getHeaders(),
     });
 
