@@ -100,7 +100,8 @@ const handler = async (req: Request, res: Response): Promise<void> => {
 // ✅ Route binding
 app.post('/api/transcribe-from-youtube', handler);
 // Fallback to serve index.html
-app.get("*", (_, res) => {
+// ✅ Serve index.html explicitly at root
+app.get("/", (_, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
