@@ -18,17 +18,11 @@ COPY . .
 # ✅ Make both shell scripts executable
 RUN chmod +x download_model.sh start.sh
 
-# 🏁 Start app (downloads model + runs Flask/Node)
-# ✅ Download Vosk Hindi model
-
 # 🏗️ Build TypeScript
 RUN npm install && npm run build
 
-# 🔓 Allow start.sh to run
-RUN chmod +x /app/start.sh
-
-# 🌐 Expose ports
+# 🌐 Expose app port
 EXPOSE 8080
 
-# 🚀 Start both Node + CLI Transcriber logic via Node
-CMD ["/app/start.sh"]
+# 🚀 Run app
+CMD ["./start.sh"]
