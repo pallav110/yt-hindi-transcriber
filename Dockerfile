@@ -7,21 +7,19 @@ RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg curl unzip &
 # Set working directory
 WORKDIR /app
 
-# Copy app files
+# Copy everything except the model
 COPY . .
 
-# Build TypeScript
+# Build TypeScript code
 RUN npm install && npx tsc
 
-# Download and extract Vosk model once inside container
-RUN curl -L -o vosk-model.zip https://alphacephei.com/vosk/models/vosk-model-hi-0.22.zip && \
-    unzip vosk-model.zip -d vosk-model && rm vosk-model.zip
-
-# Make startup script executable
+# Add startup scripts
 COPY start.sh /start.sh
-RUN chmod +x /start.sh
+COPY download_model.sh /download_model.sh
+RUN chmod +x /start.sh /download_model.sh
 
-# Expose Flask and Node ports
+# Expose both ports
 EXPOSE 5000 3000
 
+# Start both servers (and download model if needed)
 CMD ["/start.sh"]

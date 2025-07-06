@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Run Flask server in background
+# Download model if not already present
+./download_model.sh
+
+# Start Flask backend
 python3 transcribe.py &
 
-# Run Node server in foreground
+# Start Node server
 node dist/server.js
