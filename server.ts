@@ -335,6 +335,15 @@ process.on('SIGINT', () => {
 
 // Start server
 const PORT = process.env.PORT || 8080;
+setTimeout(() => {
+  console.log('\n🧭 ROUTES REGISTERED:');
+  app._router.stack
+    .filter((layer: any) => layer.route)
+    .forEach((layer: any) => {
+      console.log('📍', layer.route.path);
+    });
+}, 1000);
+
 app.listen(PORT, () => {
   console.log(`✅ Node.js server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
