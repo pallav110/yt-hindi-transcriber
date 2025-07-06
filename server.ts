@@ -62,7 +62,7 @@ const handler = async (req: Request, res: Response): Promise<void> => {
     const pythonExecutable = isWindows ? 'python' : 'python3';
     const pyPath = path.join(rootPath, 'transcriber', 'cli_transcribe.py');
 
-    const child = spawn(pythonExecutable, [pyPath, tempMp3Path, transcriptPath]);
+   const child = spawn(pythonExecutable, [pyPath, tempMp3Path, transcriptPath]);
 
     child.stdout.on('data', data => {
       console.log(`🧠 [Python]: ${data.toString().trim()}`);
@@ -76,6 +76,7 @@ const handler = async (req: Request, res: Response): Promise<void> => {
       console.error("❌ Failed to start subprocess:", err);
     });
 
+    // Catch exit codes and signals robustly
     await new Promise<void>((resolve, reject) => {
       child.on('exit', (code, signal) => {
         if (code !== null) {
@@ -91,6 +92,17 @@ const handler = async (req: Request, res: Response): Promise<void> => {
         }
       });
     });
+
+    // New: listen to close event to catch stdio closure & signals
+    child.on('close', (code, signal) => {
+      if (signal) {
+        console.error(`❌ cli_transcribe.py closed due to signal: ${signal}`);
+      } else {
+        console.log(`cli_transcribe.py closed with code: ${code}`);
+      }
+    });
+
+
     console.log(`✅ Transcription completed, saving to ${transcriptPath}`);
 
 

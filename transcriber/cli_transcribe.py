@@ -8,17 +8,14 @@ import tempfile
 from vosk import Model, KaldiRecognizer
 from pydub import AudioSegment
 
-# ✅ Silence unnecessary Vosk logs
 logging.getLogger().setLevel(logging.ERROR)
 
-# ✅ Unicode output (especially for Hindi)
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding='utf-8')
 
 def print_error(msg):
     print(f"[CLI ERROR]: {msg}", file=sys.stderr)
 
-# ✅ Validate arguments
 if len(sys.argv) < 3:
     print_error("Usage: python cli_transcribe.py <mp3_path> <output_path>")
     sys.exit(1)
@@ -39,7 +36,6 @@ if os.path.getsize(mp3_path) == 0:
 
 print(f"[INFO]: Input file size: {os.path.getsize(mp3_path) / 1024:.2f} KB")
 
-# ✅ Locate model path
 model_paths = [
     "transcriber/vosk-model/vosk-model-hi-0.22",
     "vosk-model/vosk-model-hi-0.22",
@@ -57,7 +53,6 @@ if not model_path:
 
 print(f"[INFO]: Using model at: {model_path}")
 
-# ✅ Load model
 try:
     print("[INFO]: Loading Vosk model...")
     model = Model(model_path)
@@ -66,7 +61,6 @@ except Exception as e:
     print_error(f"Failed to load model: {e}")
     sys.exit(1)
 
-# ✅ Convert MP3 → WAV
 temp_wav_path = None
 try:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_wav:
@@ -81,35 +75,53 @@ try:
 
     print(f"[INFO]: WAV created: {os.path.getsize(temp_wav_path)/1024:.2f} KB")
 
-    # ✅ Transcribe
-    result_text = ""
-    with wave.open(temp_wav_path, "rb") as wf:
-        if wf.getnchannels() != 1 or wf.getframerate() != 16000:
-            print_error("WAV must be mono and 16kHz")
-            sys.exit(1)
+    # --- Begin chunked transcription ---
+    chunk_ms = 5000  # 5 seconds
+    transcript_chunks = []
 
-        rec = KaldiRecognizer(model, wf.getframerate())
-        while True:
-            data = wf.readframes(4000)
-            if not data:
-                break
-            if rec.AcceptWaveform(data):
-                res = json.loads(rec.Result())
-                result_text += res.get("text", "") + " "
+    total_length_ms = len(audio)
+    print(f"[INFO]: Audio length: {total_length_ms/1000:.2f} seconds")
+    
+    for start_ms in range(0, total_length_ms, chunk_ms):
+        end_ms = min(start_ms + chunk_ms, total_length_ms)
+        chunk_audio = audio[start_ms:end_ms]
 
-        final = json.loads(rec.FinalResult())
-        result_text += final.get("text", "")
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as chunk_wav:
+            chunk_wav_path = chunk_wav.name
+            chunk_audio.export(chunk_wav_path, format="wav")
 
-    if not result_text.strip():
+        with wave.open(chunk_wav_path, "rb") as wf:
+            if wf.getnchannels() != 1 or wf.getframerate() != 16000:
+                print_error("WAV chunk must be mono and 16kHz")
+                sys.exit(1)
+
+            rec = KaldiRecognizer(model, wf.getframerate())
+            chunk_result = ""
+            while True:
+                data = wf.readframes(4000)
+                if not data:
+                    break
+                if rec.AcceptWaveform(data):
+                    res = json.loads(rec.Result())
+                    chunk_result += res.get("text", "") + " "
+            final = json.loads(rec.FinalResult())
+            chunk_result += final.get("text", "")
+
+        transcript_chunks.append(chunk_result.strip())
+        os.remove(chunk_wav_path)
+        print(f"[INFO]: Transcribed chunk {start_ms/1000:.1f}-{end_ms/1000:.1f}s")
+
+    result_text = " ".join(t for t in transcript_chunks if t).strip()
+
+    if not result_text:
         print_error("Transcription resulted in empty text")
 
-    # ✅ Save to file
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write(result_text.strip())
+        f.write(result_text)
 
     print(f"[INFO]: Transcript saved to: {output_path}")
-    print(result_text.strip())  # For Node.js capture
+    print(result_text)
 
 except Exception as e:
     print_error(f"Transcription failed: {e}")
@@ -127,5 +139,3 @@ finally:
         sys.exit(1)
     print("[INFO]: Transcription completed successfully", file=sys.stderr)
     sys.exit(0)
-# ✅ End of script
-# This script transcribes Hindi audio from MP3 to text using Vosk and saves the result
