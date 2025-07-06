@@ -15,6 +15,7 @@ WORKDIR /app
 
 # 📦 Copy everything into container
 COPY . .
+
 # ✅ Make both shell scripts executable
 RUN chmod +x download_model.sh start.sh
 
@@ -24,15 +25,5 @@ RUN npm install && npm run build
 # 🌐 Expose app port
 EXPOSE 8080
 
-
-# Download and unzip Vosk model only if not present (use Railway persistent volume mounted at /app/vosk-model)
-RUN if [ ! -d "/app/vosk-model/vosk-model-hi-0.22" ]; then \
-      ./download_model.sh && \
-      unzip vosk-model-hi-0.22.zip -d /app/vosk-model; \
-    fi
-
-# Expose port
-EXPOSE 8080
-
-# Start combined service
+# 🚀 Run app
 CMD ["./start.sh"]
