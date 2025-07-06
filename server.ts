@@ -64,24 +64,35 @@ const handler = async (req: Request, res: Response): Promise<void> => {
 
     const child = spawn(pythonExecutable, [pyPath, tempMp3Path, transcriptPath]);
 
-    child.stdout.on('data', (data) => {
+    child.stdout.on('data', data => {
       console.log(`🧠 [Python]: ${data.toString().trim()}`);
     });
 
-    child.stderr.on('data', (data) => {
+    child.stderr.on('data', data => {
       console.error(`❌ [Python ERROR]: ${data.toString().trim()}`);
     });
 
-    child.on('error', (err) => {
-      console.error('❌ Failed to start subprocess:', err);
+    child.on('error', err => {
+      console.error("❌ Failed to start subprocess:", err);
     });
 
     await new Promise<void>((resolve, reject) => {
-      child.on('close', (code) => {
-        if (code === 0) resolve();
-        else reject(new Error(`cli_transcribe.py exited with code ${code}`));
+      child.on('exit', (code, signal) => {
+        if (code !== null) {
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`cli_transcribe.py exited with code ${code}`));
+          }
+        } else if (signal !== null) {
+          reject(new Error(`cli_transcribe.py was killed by signal ${signal}`));
+        } else {
+          reject(new Error(`cli_transcribe.py exited with unknown status`));
+        }
       });
     });
+    console.log(`✅ Transcription completed, saving to ${transcriptPath}`);
+
 
     const transcript = fs.readFileSync(transcriptPath, 'utf-8');
 
