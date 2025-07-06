@@ -1,8 +1,10 @@
 FROM node:18
 
 # Install Python and required system tools
+# Install Python and system packages
 RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg curl unzip && \
-    pip3 install flask vosk pydub
+    pip3 install --break-system-packages flask vosk pydub
+
 
 # Set work directory
 WORKDIR /app
