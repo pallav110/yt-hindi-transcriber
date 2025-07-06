@@ -15,7 +15,10 @@ WORKDIR /app
 
 # 📦 Copy everything into container
 COPY . .
+# ✅ Make both shell scripts executable
+RUN chmod +x download_model.sh start.sh
 
+# 🏁 Start app (downloads model + runs Flask/Node)
 # ✅ Download Vosk Hindi model
 
 # 🏗️ Build TypeScript
