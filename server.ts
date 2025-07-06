@@ -10,9 +10,13 @@ import { spawn } from 'child_process';
 
 
 // 🔁 Spawn Flask server when Node starts
+
 const pythonExecutable = process.env.NODE_ENV === 'production' ? 'python3' : 'python';
-spawn(pythonExecutable, ['transcriber/app.py'], {
-  cwd: __dirname,
+
+// ✅ Resolve the correct path to transcriber/app.py
+const flaskAppPath = path.join(__dirname, '..', 'transcriber', 'app.py');
+
+spawn(pythonExecutable, [flaskAppPath], {
   stdio: 'inherit',
 });
 
