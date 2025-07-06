@@ -6,8 +6,19 @@ import { v4 as uuidv4 } from 'uuid';
 import FormData from 'form-data';
 import { finished } from 'stream/promises';
 import path from 'path';
+import { spawn } from 'child_process';
+
+
+// 🔁 Spawn Flask server when Node starts
+spawn('python', ['transcriber/app.py'], {
+  cwd: path.resolve(__dirname, '..'),
+  stdio: 'inherit',
+});
+
 
 const app = express();
+
+
 app.use(cors());
 app.use(express.json());
 
@@ -60,10 +71,12 @@ const handler = async (req: Request, res: Response): Promise<void> => {
       filename: path.basename(tempMp3Path),
     });
 
-    const transcriptResponse = await axios.post('http://localhost:5000/transcribe', form, {
-      headers: form.getHeaders(),
-    });
-
+    const transcriptResponse = await axios.post(
+      'http://127.0.0.1:5000/transcribe',
+      form,
+      { headers: form.getHeaders() }
+    );
+    console.log('📝 Transcription response received from Flask server');
 
     const transcript: string = transcriptResponse.data.transcript;
 

@@ -6,3 +6,6 @@ dist
 vosk-model/*
 !vosk-model/vosk-model-small-hi-0.4/  # optional: keep model locally
 uploads/
+transcriber/vosk-model/
+transcribe.py
+test.py

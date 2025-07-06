@@ -1,15 +1,21 @@
 #!/bin/bash
 
-# Download Vosk Hindi model if not already present
-if [ ! -d "vosk-model/vosk-model-hi-0.22" ]; then
+echo "🔍 Checking Vosk model..."
+
+if [ ! -d "transcriber/vosk-model/vosk-model-hi-0.22" ]; then
   echo "🔽 Downloading Hindi Vosk model..."
   ./download_model.sh
 else
   echo "✅ Vosk model already exists."
 fi
 
-# Start Flask in background
-python3 transcribe.py &
+# Run Flask app in background
+echo "🚀 Starting Flask server..."
+python3 transcriber/app.py &
 
-# Start Node.js server
+# Wait to avoid ECONNREFUSED
+sleep 5
+
+# Start Node.js app
+echo "🚀 Starting Node.js server..."
 node dist/server.js
