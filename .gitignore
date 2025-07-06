@@ -12,5 +12,3 @@ test.py
 app.py
 transcriber/app.py
 transcriber\app.py
-transcriber\requirements.txt
-requirements.txt
