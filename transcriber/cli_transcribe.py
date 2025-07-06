@@ -37,11 +37,11 @@ if os.path.getsize(mp3_path) == 0:
 print(f"[INFO]: Input file size: {os.path.getsize(mp3_path) / 1024:.2f} KB")
 
 model_paths = [
-    "transcriber/vosk-model/vosk-model-hi-0.22",
-    "vosk-model/vosk-model-hi-0.22",
-    "./vosk-model-hi-0.22",
-    "../vosk-model-hi-0.22",
-    os.path.join(os.path.dirname(__file__), "vosk-model", "vosk-model-hi-0.22")
+    "transcriber/vosk-model/vosk-model-small-hi-0.22",
+    "vosk-model/vosk-model-small-hi-0.22",
+    "./vosk-model-small-hi-0.22",
+    "../vosk-model-small-hi-0.22",
+    os.path.join(os.path.dirname(__file__), "vosk-model", "vosk-model-small-hi-0.22")
 ]
 model_path = next((p for p in model_paths if os.path.exists(p)), None)
 
