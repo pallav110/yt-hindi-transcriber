@@ -1,38 +1,21 @@
+import { spawn } from 'child_process';
 import express, { Request, Response } from 'express';
 import axios from 'axios';
 import fs from 'fs';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
-import FormData from 'form-data';
 import { finished } from 'stream/promises';
 import path from 'path';
-import { spawn } from 'child_process';
-
-
-// 🔁 Spawn Flask server when Node starts
-
-const pythonExecutable = process.env.NODE_ENV === 'production' ? 'python3' : 'python';
-
-// ✅ Resolve the correct path to transcriber/app.py
-const flaskAppPath = path.join(__dirname, '..', 'transcriber', 'app.py');
-
-spawn(pythonExecutable, [flaskAppPath], {
-  stdio: 'inherit',
-});
-
 
 const app = express();
-
-
 app.use(cors());
 app.use(express.json());
 
+const rootPath = path.resolve(__dirname, '..');
+const transcriptsDir = path.join(rootPath, 'transcripts');
 
-// Serve static files from /public
-app.use(express.static(path.join(__dirname, "../public")));
-
-// Serve transcripts directory
-app.use("/transcripts", express.static(path.join(__dirname, "transcripts")));
+app.use(express.static(path.join(rootPath, 'public')));
+app.use('/transcripts', express.static(transcriptsDir));
 
 const downloadAudio = async (url: string, outputPath: string): Promise<void> => {
   const response = await axios({
@@ -45,7 +28,7 @@ const downloadAudio = async (url: string, outputPath: string): Promise<void> => 
 
   const writer = fs.createWriteStream(outputPath);
   response.data.pipe(writer);
-  await finished(writer); // wait until stream finishes
+  await finished(writer);
 };
 
 const handler = async (req: Request, res: Response): Promise<void> => {
@@ -57,75 +40,60 @@ const handler = async (req: Request, res: Response): Promise<void> => {
   }
 
   const tempMp3Path = `temp_audio_${uuidv4()}.mp3`;
+  const transcriptFileName = `transcript_${uuidv4()}.txt`;
+  const transcriptPath = path.join(transcriptsDir, transcriptFileName);
 
   try {
     console.log(`🎧 Downloading MP3 from Railway API for URL: ${url}`);
     await downloadAudio(url, tempMp3Path);
 
-    if (!fs.existsSync(tempMp3Path)) {
-      throw new Error('MP3 file was not saved properly');
-    }
-
     const stats = fs.statSync(tempMp3Path);
     console.log(`✅ Downloaded audio (${(stats.size / 1024).toFixed(2)} KB)`);
 
-    // Prepare form for Flask server
-    const form = new FormData();
-    form.append('audio', fs.createReadStream(tempMp3Path), {
-      contentType: 'audio/mpeg',
-      filename: path.basename(tempMp3Path),
+    const isProduction = process.env.NODE_ENV === 'production';
+    const isWindows = process.platform === 'win32';
+    const pythonExecutable = isWindows ? 'python' : 'python3';
+
+    // Path to cli_transcribe.py
+    const pyPath = path.join(rootPath, 'transcriber', 'cli_transcribe.py');
+
+    // Ensure transcripts directory exists
+    fs.mkdirSync(transcriptsDir, { recursive: true });
+
+    const child = spawn(pythonExecutable, [pyPath, tempMp3Path, transcriptPath]);
+
+    child.stdout.on('data', (data) => console.log(`🧠 [Python]: ${data.toString()}`));
+    child.stderr.on('data', (data) => console.error(`❌ [Python ERROR]: ${data.toString()}`));
+
+    await new Promise<void>((resolve, reject) => {
+      child.on('close', (code) => {
+        if (code === 0) resolve();
+        else reject(new Error(`cli_transcribe.py exited with code ${code}`));
+      });
     });
 
-    const transcriptResponse = await axios.post(
-      'http://127.0.0.1:5000/transcribe',
-      form,
-      { headers: form.getHeaders() }
-    );
-    console.log('📝 Transcription response received from Flask server');
-
-    const transcript: string = transcriptResponse.data.transcript;
-
-    // Save transcript to .txt file
-    const transcriptDir = path.join(__dirname, 'transcripts');
-    const transcriptFileName = `transcript_${uuidv4()}.txt`;
-    const transcriptPath = path.join(transcriptDir, transcriptFileName);
-
-    // Ensure directory exists
-    fs.mkdirSync(transcriptDir, { recursive: true });
-
-    // Write transcript to file
-    fs.writeFileSync(transcriptPath, transcript, 'utf-8');
-    console.log(`📝 Transcript saved to: ${transcriptPath}`);
+    const transcript = fs.readFileSync(transcriptPath, 'utf-8');
 
     res.json({
       transcript,
       file: transcriptFileName,
       path: `/transcripts/${transcriptFileName}`,
       size_kb: (stats.size / 1024).toFixed(2),
-      method: 'Railway + Flask Vosk',
+      method: 'Railway + CLI Vosk',
     });
 
   } catch (err: any) {
     console.error('❌ Error during transcription:', err.message);
     res.status(500).json({ error: 'Failed to transcribe audio', details: err.message });
   } finally {
-    if (fs.existsSync(tempMp3Path)) {
-      fs.unlinkSync(tempMp3Path); // cleanup temp file
-    }
+    if (fs.existsSync(tempMp3Path)) fs.unlinkSync(tempMp3Path);
   }
 };
 
-// ✅ Route binding
 app.post('/api/transcribe-from-youtube', handler);
-// Fallback to serve index.html
-// ✅ Serve index.html explicitly at root
-app.get("/", (_, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
-});
+app.get('/', (_, res) => res.sendFile(path.join(rootPath, 'public', 'index.html')));
 
-
-// ✅ Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`✅ Node.js server running on port ${PORT}`));
 
 export default handler;

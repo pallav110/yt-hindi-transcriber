@@ -1,28 +1,31 @@
+# 🐧 Use official Node base image with Python included
 FROM node:18
 
-# Install Python and required system tools
-# Install Python and system packages
-RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg curl unzip && \
-    pip3 install --break-system-packages flask vosk pydub
+# 🛠️ Install Python, pip, ffmpeg, unzip
+RUN apt-get update && \
+    apt-get install -y python3 python3-pip ffmpeg curl unzip && \
+    apt-get clean
 
+# 🧠 Install Python dependencies
+COPY transcriber/requirements.txt /tmp/requirements.txt
+RUN pip3 install --break-system-packages --no-cache-dir -r /tmp/requirements.txt
 
-# Set work directory
+# 🔧 Create app directory
 WORKDIR /app
 
-# Copy everything
+# 📦 Copy everything into container
 COPY . .
 
-# Make scripts executable
-RUN chmod +x start.sh download_model.sh
+# ✅ Download Vosk Hindi model
 
-# Build TypeScript
-RUN npm install && npx tsc
+# 🏗️ Build TypeScript
+RUN npm install && npm run build
 
-# Expose both ports
-EXPOSE 3000 5000
+# 🔓 Allow start.sh to run
+RUN chmod +x /app/start.sh
 
-ENV NODE_ENV=production
+# 🌐 Expose ports
+EXPOSE 8080
 
-
-# Start both Flask + Node.js
-CMD ["./start.sh"]
+# 🚀 Start both Node + CLI Transcriber logic via Node
+CMD ["/app/start.sh"]

@@ -9,3 +9,8 @@ uploads/
 transcriber/vosk-model/
 transcribe.py
 test.py
+app.py
+transcriber/app.py
+transcriber\app.py
+transcriber\requirements.txt
+requirements.txt
