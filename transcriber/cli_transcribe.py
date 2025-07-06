@@ -21,13 +21,22 @@ if len(sys.argv) < 2:
     sys.exit(1)
 
 mp3_path = sys.argv[1]
+mp3_path = sys.argv[1]
+if not os.path.exists(mp3_path):
+    print(f"[CLI ERROR]: File not found: {mp3_path}", file=sys.stderr)
+    sys.exit(1)
 
 if not os.path.exists(mp3_path):
     print(f"[CLI ERROR]: File not found: {mp3_path}", file=sys.stderr)
     sys.exit(1)
 
 # ✅ Load Hindi Vosk model
-model = Model("transcriber/vosk-model/vosk-model-hi-0.22")
+model_path = "transcriber/vosk-model/vosk-model-hi-0.22"
+if not os.path.exists(model_path):
+    print(f"[CLI ERROR]: Model not found: {model_path}", file=sys.stderr)
+    sys.exit(1)
+
+model = Model(model_path)
 
 # ✅ Safe temporary file handling using auto-cleanup
 result_text = ""
