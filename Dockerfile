@@ -21,5 +21,8 @@ RUN npm install && npx tsc
 # Expose both ports
 EXPOSE 3000 5000
 
+ENV NODE_ENV=production
+
+
 # Start both Flask + Node.js
 CMD ["./start.sh"]
