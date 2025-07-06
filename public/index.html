@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-gray-100 text-gray-900">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube Hindi Transcriber</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex flex-col justify-center items-center px-4">
+
+  <div class="max-w-xl w-full bg-white shadow-md rounded-xl p-6 mt-12">
+    <h1 class="text-2xl font-bold mb-4 text-center">🎙️ YouTube Hindi Transcriber</h1>
+    
+    <form id="transcribeForm" class="space-y-4">
+      <input
+        id="youtubeUrl"
+        type="url"
+        required
+        placeholder="Enter YouTube URL"
+        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:border-blue-300"
+      />
+      
+      <button
+        type="submit"
+        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition"
+      >
+        Transcribe
+      </button>
+    </form>
+
+    <div id="result" class="mt-6 text-sm whitespace-pre-wrap hidden"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("transcribeForm");
+    const result = document.getElementById("result");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const url = document.getElementById("youtubeUrl").value;
+
+      result.classList.remove("hidden");
+      result.textContent = "⏳ Transcribing...";
+
+      try {
+        const response = await fetch("/api/transcribe-from-youtube", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+
+        const data = await response.json();
+        if (response.ok) {
+          result.textContent = `✅ Transcription:\n\n${data.transcript}`;
+        } else {
+          result.textContent = `❌ Error: ${data.error}\n${data.details || ''}`;
+        }
+      } catch (err) {
+        result.textContent = `❌ Network Error: ${err.message}`;
+      }
+    });
+  </script>
+
+</body>
+</html>

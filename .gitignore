@@ -5,5 +5,4 @@ dist
 *.wav
 vosk-model/*
 !vosk-model/vosk-model-small-hi-0.4/  # optional: keep model locally
-index.html
 uploads/
