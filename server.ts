@@ -11,6 +11,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+// Serve static files from /public
+app.use(express.static(path.join(__dirname, "../public")));
+
+// Serve transcripts directory
+app.use("/transcripts", express.static(path.join(__dirname, "transcripts")));
+
 const downloadAudio = async (url: string, outputPath: string): Promise<void> => {
   const response = await axios({
     method: 'POST',
@@ -92,6 +99,11 @@ const handler = async (req: Request, res: Response): Promise<void> => {
 
 // ✅ Route binding
 app.post('/api/transcribe-from-youtube', handler);
+// Fallback to serve index.html
+app.get("*", (_, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
+
 
 // ✅ Start server
 const PORT = process.env.PORT || 3000;

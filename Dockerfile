@@ -7,19 +7,17 @@ RUN apt-get update && apt-get install -y python3 python3-pip ffmpeg curl unzip &
 # Set working directory
 WORKDIR /app
 
-# Copy everything except the model
+# Copy everything before setting permission
 COPY . .
 
-# Build TypeScript code
+# Set execute permission (important: must refer to correct copied path inside container)
+RUN chmod +x /app/start.sh /app/download_model.sh
+
+# Build TypeScript
 RUN npm install && npx tsc
 
-# Add startup scripts
-COPY start.sh /start.sh
-COPY download_model.sh /download_model.sh
-RUN chmod +x /start.sh /download_model.sh
-
-# Expose both ports
+# Expose Flask and Node ports
 EXPOSE 5000 3000
 
-# Start both servers (and download model if needed)
-CMD ["/start.sh"]
+# Use absolute path in CMD to avoid shell errors
+CMD ["/app/start.sh"]
