@@ -44,6 +44,8 @@ model_paths = [
     os.path.join(os.path.dirname(__file__), "vosk-model", "vosk-model-small-hi-0.22")
 ]
 model_path = next((p for p in model_paths if os.path.exists(p)), None)
+print("[DEBUG]: model_path used =", model_path)
+print("[DEBUG]: Exists =", os.path.exists(model_path))
 
 if not model_path:
     print_error("Hindi Vosk model not found.")
